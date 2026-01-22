@@ -1,173 +1,291 @@
+// 1. IMPORT CÁC THƯ VIỆN CẦN THIẾT (KHÔNG CÓ STORAGE)
 import { db, auth } from '../../src/config/firebase-config.js';
 import { 
-    collection, query, orderBy, onSnapshot, doc, updateDoc 
+    collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
     onAuthStateChanged, signInWithEmailAndPassword, signOut 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-console.log("⚡ Admin Script Loaded with Login Gate");
+console.log("⚡ Admin V2 Loaded - No Storage Mode");
 
-// DOM Elements
-const loginContainer = document.getElementById('login-container');
-const dashboardContainer = document.getElementById('dashboard-container');
-const adminLoginForm = document.getElementById('adminLoginForm');
-const loginError = document.getElementById('loginError');
+// 2. DOM ELEMENTS
+const dom = {
+    loginContainer: document.getElementById('login-container'),
+    dashboardContainer: document.getElementById('dashboard-container'),
+    loginForm: document.getElementById('adminLoginForm'),
+    loginError: document.getElementById('loginError'),
+    navItems: document.querySelectorAll('.nav-item'),
+    sections: document.querySelectorAll('.content-section'),
+    pageTitle: document.getElementById('pageTitle'),
+    
+    // Booking
+    bookingBody: document.getElementById('bookingTableBody'),
+    countPending: document.getElementById('countPending'),
+    countTotal: document.getElementById('countTotal'),
+    
+    // Room
+    roomForm: document.getElementById('roomForm'),
+    roomBody: document.getElementById('roomTableBody'),
+    roomImageUrl: document.getElementById('roomImageUrl'),
+    imagePreview: document.getElementById('imagePreview')
+};
 
-const tableBody = document.getElementById('bookingTableBody');
-const adminEmailDisplay = document.getElementById('adminEmailDisplay');
-const btnLogout = document.getElementById('btnLogout');
-const countPendingDisplay = document.getElementById('countPending');
-const countTotalDisplay = document.getElementById('countTotal');
-
-// KHỞI TẠO
+// 3. INIT (KHỞI TẠO)
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Lắng nghe trạng thái đăng nhập
+    checkAuthStatus();
+    setupLoginHandler();
+    setupTabNavigation();
+    setupRoomManager(); // Logic quản lý phòng
+});
+
+// --- PHẦN 1: XÁC THỰC (AUTH) ---
+function checkAuthStatus() {
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // ĐÃ ĐĂNG NHẬP -> HIỆN DASHBOARD
-            console.log("Admin Logged In:", user.email);
-            loginContainer.style.display = 'none';
-            dashboardContainer.style.display = 'flex'; // Trả lại display flex cho dashboard
+            // Đã đăng nhập
+            dom.loginContainer.style.display = 'none';
+            dom.dashboardContainer.style.display = 'flex';
+            document.getElementById('adminEmailDisplay').innerText = user.email;
             
-            adminEmailDisplay.innerText = user.email;
-            initRealtimeData(); // Bắt đầu tải dữ liệu
+            // Tải dữ liệu
+            initBookingData();
+            initRoomData();
         } else {
-            // CHƯA ĐĂNG NHẬP -> HIỆN LOGIN FORM
-            console.log("No User -> Show Login Form");
-            loginContainer.style.display = 'flex';
-            dashboardContainer.style.display = 'none';
+            // Chưa đăng nhập
+            dom.loginContainer.style.display = 'flex';
+            dom.dashboardContainer.style.display = 'none';
         }
     });
 
-    // 2. Xử lý Đăng nhập ngay tại Admin Page
-    if (adminLoginForm) {
-        adminLoginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('admEmail').value;
-            const pass = document.getElementById('admPass').value;
-            const btn = adminLoginForm.querySelector('button');
+    // Logout
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+        if(confirm("Đăng xuất khỏi hệ thống?")) await signOut(auth);
+    });
+}
 
-            try {
-                btn.innerText = "Đang kiểm tra...";
-                btn.disabled = true;
-                loginError.style.display = 'none';
+function setupLoginHandler() {
+    dom.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('admEmail').value;
+        const pass = document.getElementById('admPass').value;
+        const btn = dom.loginForm.querySelector('button');
 
-                // Gọi hàm login của Firebase trực tiếp
-                await signInWithEmailAndPassword(auth, email, pass);
-                
-                // Nếu thành công, onAuthStateChanged ở trên sẽ tự chạy và chuyển cảnh
-                // Không cần code chuyển trang ở đây
+        try {
+            btn.innerText = "Đang xử lý...";
+            dom.loginError.style.display = 'none';
+            await signInWithEmailAndPassword(auth, email, pass);
+            // onAuthStateChanged sẽ tự chuyển màn hình
+        } catch (err) {
+            console.error(err);
+            dom.loginError.innerText = "Sai thông tin đăng nhập!";
+            dom.loginError.style.display = 'block';
+            btn.innerText = "Đăng nhập";
+        }
+    });
+}
 
-            } catch (error) {
-                console.error(error);
-                loginError.style.display = 'block';
-                loginError.innerText = "Sai email hoặc mật khẩu!";
-                btn.innerText = "Đăng nhập";
-                btn.disabled = false;
-            }
+// --- PHẦN 2: ĐIỀU HƯỚNG TAB ---
+function setupTabNavigation() {
+    dom.navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // Xử lý active menu
+            dom.navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+
+            // Chuyển nội dung
+            const targetId = item.getAttribute('data-target');
+            dom.sections.forEach(sec => sec.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+
+            // Đổi tên tiêu đề
+            dom.pageTitle.innerText = item.querySelector('span').innerText;
         });
-    }
+    });
+}
 
-    // 3. Xử lý Đăng xuất
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            if(confirm("Đăng xuất Admin?")) {
-                await signOut(auth);
-                // Sau khi signout, onAuthStateChanged tự chạy -> hiện lại Login Form
-            }
-        });
-    }
-});
-
-// --- LOGIC LOAD DỮ LIỆU (GIỐNG CŨ) ---
-function initRealtimeData() {
+// --- PHẦN 3: QUẢN LÝ ĐẶT PHÒNG (BOOKINGS) ---
+function initBookingData() {
     const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
-
     onSnapshot(q, (snapshot) => {
-        tableBody.innerHTML = "";
+        dom.bookingBody.innerHTML = "";
         let pending = 0;
         let total = 0;
 
-        if (snapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Chưa có dữ liệu</td></tr>`;
+        if(snapshot.empty) {
+            dom.bookingBody.innerHTML = "<tr><td colspan='5' style='text-align:center'>Chưa có đơn hàng nào</td></tr>";
             return;
         }
 
-        snapshot.forEach((doc) => {
-            const booking = doc.data();
-            booking.id = doc.id;
+        snapshot.forEach(doc => {
+            const b = doc.data();
+            b.id = doc.id;
             total++;
-            if (booking.status === 'pending') pending++;
-            renderBookingRow(booking);
+            if(b.status === 'pending') pending++;
+
+            const tr = document.createElement('tr');
+            // Format ngày
+            const date = b.createdAt?.toDate ? b.createdAt.toDate().toLocaleDateString('vi-VN') : '---';
+            
+            // Badge trạng thái
+            let statusClass = `status-${b.status}`;
+            let statusText = b.status === 'pending' ? 'Chờ duyệt' : (b.status === 'confirmed' ? 'Đã duyệt' : 'Đã hủy');
+
+            tr.innerHTML = `
+                <td>${date}</td>
+                <td>
+                    <b>${b.customerName}</b><br>
+                    <small>${b.customerPhone}</small>
+                </td>
+                <td>
+                    <span style="color:var(--primary-color)">${b.roomType}</span><br>
+                    <small>${b.checkIn} ➝ ${b.checkOut}</small>
+                </td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    ${b.status === 'pending' ? `
+                        <button class="btn-verify" data-id="${b.id}" style="color:green; border:1px solid green; background:white; cursor:pointer; padding:2px 5px; border-radius:3px;">✔ Duyệt</button>
+                        <button class="btn-cancel" data-id="${b.id}" style="color:red; border:1px solid red; background:white; cursor:pointer; padding:2px 5px; border-radius:3px;">✖ Hủy</button>
+                    ` : '<span style="color:#aaa">-</span>'}
+                </td>
+            `;
+            dom.bookingBody.appendChild(tr);
         });
 
-        if(countPendingDisplay) countPendingDisplay.innerText = pending;
-        if(countTotalDisplay) countTotalDisplay.innerText = total;
+        // Update số liệu
+        dom.countPending.innerText = pending;
+        dom.countTotal.innerText = total;
+    });
+
+    // Event Delegation cho nút bấm trong bảng
+    dom.bookingBody.addEventListener('click', async (e) => {
+        const target = e.target;
+        const id = target.getAttribute('data-id');
+
+        if(target.classList.contains('btn-verify')) {
+            if(confirm("Xác nhận đã nhận cọc/thanh toán cho đơn này?")) {
+                await updateDoc(doc(db, "bookings", id), { status: 'confirmed' });
+            }
+        }
+        if(target.classList.contains('btn-cancel')) {
+            const reason = prompt("Lý do hủy đơn:");
+            if(reason) {
+                await updateDoc(doc(db, "bookings", id), { status: 'cancelled', cancelReason: reason });
+            }
+        }
     });
 }
 
-function renderBookingRow(booking) {
-    const tr = document.createElement('tr');
+// --- PHẦN 4: QUẢN LÝ PHÒNG & XỬ LÝ ẢNH (QUAN TRỌNG) ---
+
+// Hàm xử lý link Google Drive thành link ảnh hiển thị được
+function convertDriveLink(url) {
+    if(!url) return "";
+    // Regex tìm ID của Google Drive
+    const driveRegex = /\/d\/([a-zA-Z0-9_-]+)/;
+    const match = url.match(driveRegex);
     
-    // Format Date
-    const date = booking.createdAt?.toDate ? booking.createdAt.toDate().toLocaleString('vi-VN') : '---';
-
-    // Badge
-    let badge = `<span class="badge bg-pending">? ${booking.status}</span>`;
-    let actions = '';
-
-    if (booking.status === 'pending') {
-        badge = `<span class="badge bg-pending">Chờ duyệt</span>`;
-        actions = `
-            <button class="btn-action btn-approve" data-id="${booking.id}">✔</button>
-            <button class="btn-action btn-cancel" data-id="${booking.id}">✖</button>
-        `;
-    } else if (booking.status === 'confirmed') {
-        badge = `<span class="badge bg-confirmed">Đã duyệt</span>`;
-        actions = `<span style="color:green"><i class="fas fa-check"></i></span>`;
-    } else {
-        badge = `<span class="badge bg-cancelled">Hủy</span>`;
-        actions = `<span style="color:red">Đã hủy</span>`;
+    if (match && match[1]) {
+        // Trả về link trực tiếp qua cổng googleusercontent (Load siêu nhanh)
+        // Cách khác: https://drive.google.com/uc?export=view&id=ID
+        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
     }
-
-    tr.innerHTML = `
-        <td>${date}</td>
-        <td>
-            <b>${booking.customerName}</b><br>
-            ${booking.customerPhone}
-        </td>
-        <td>
-            <span style="color:var(--primary-color)">${booking.roomType}</span><br>
-            <small>${booking.checkIn} -> ${booking.checkOut}</small>
-        </td>
-        <td>${badge}</td>
-        <td>${actions}</td>
-    `;
-    tableBody.appendChild(tr);
+    return url; // Nếu không phải link Drive thì giữ nguyên
 }
 
-// Event Delegation cho nút bấm
-tableBody.addEventListener('click', async (e) => {
-    const target = e.target;
-    const id = target.getAttribute('data-id');
-
-    if (target.classList.contains('btn-approve')) {
-        if(confirm("Duyệt đơn này?")) await updateStatus(id, 'confirmed');
-    }
-    if (target.classList.contains('btn-cancel')) {
-        const reason = prompt("Lý do hủy:");
-        if(reason) await updateStatus(id, 'cancelled', reason);
-    }
-});
-
-async function updateStatus(id, status, reason="") {
-    try {
-        await updateDoc(doc(db, "bookings", id), {
-            status: status,
-            cancelReason: reason
+function initRoomData() {
+    const q = query(collection(db, "rooms"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snapshot) => {
+        dom.roomBody.innerHTML = "";
+        
+        snapshot.forEach(doc => {
+            const r = doc.data();
+            const price = new Intl.NumberFormat('vi-VN').format(r.price);
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <img src="${r.image}" onerror="this.src='https://via.placeholder.com/100x70?text=Lỗi+Ảnh'" 
+                         style="width:80px; height:60px; object-fit:cover; border-radius:4px; border:1px solid #eee;">
+                </td>
+                <td>
+                    <b>${r.name}</b><br>
+                    <span style="font-size:0.85em; color:#666;">${r.type}</span>
+                </td>
+                <td style="color:var(--primary-color); font-weight:bold;">${price} đ</td>
+                <td><small>${r.description?.substring(0, 40)}...</small></td>
+                <td>
+                    <button class="btn-delete-room" data-id="${doc.id}" style="color:red; background:none; border:none; cursor:pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            dom.roomBody.appendChild(tr);
         });
-    } catch (e) {
-        alert("Lỗi: " + e.message);
-    }
+    });
+
+    // Xóa phòng
+    dom.roomBody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-delete-room');
+        if(btn) {
+            if(confirm("Bạn chắc chắn muốn xóa phòng này khỏi Website?")) {
+                await deleteDoc(doc(db, "rooms", btn.dataset.id));
+            }
+        }
+    });
+}
+
+function setupRoomManager() {
+    // 1. Tự động chuyển link khi paste vào ô input
+    dom.roomImageUrl.addEventListener('input', (e) => {
+        const rawUrl = e.target.value;
+        const convertedUrl = convertDriveLink(rawUrl);
+        
+        if(convertedUrl) {
+            dom.imagePreview.src = convertedUrl;
+            dom.imagePreview.style.display = 'block';
+        } else {
+            dom.imagePreview.style.display = 'none';
+        }
+    });
+
+    // 2. Submit Form Thêm Phòng
+    dom.roomForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = dom.roomForm.querySelector('button');
+        const oldText = btn.innerText;
+        btn.innerText = "Đang lưu...";
+        btn.disabled = true;
+
+        try {
+            const name = document.getElementById('roomName').value;
+            const price = Number(document.getElementById('roomPrice').value);
+            const type = document.getElementById('roomType').value;
+            const desc = document.getElementById('roomDesc').value;
+            const rawUrl = document.getElementById('roomImageUrl').value;
+            
+            // Chuyển link lần cuối trước khi lưu
+            const finalImage = convertDriveLink(rawUrl) || "https://via.placeholder.com/400x300?text=No+Image";
+
+            await addDoc(collection(db, "rooms"), {
+                name, 
+                price, 
+                type, 
+                description: desc,
+                image: finalImage,
+                createdAt: new Date()
+            });
+
+            alert("Đã thêm phòng thành công!");
+            dom.roomForm.reset();
+            dom.imagePreview.style.display = 'none';
+
+        } catch (err) {
+            console.error(err);
+            alert("Lỗi: " + err.message);
+        } finally {
+            btn.innerText = oldText;
+            btn.disabled = false;
+        }
+    });
 }
