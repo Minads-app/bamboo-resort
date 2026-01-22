@@ -105,19 +105,25 @@ function initRoomData() {
     onSnapshot(collection(db, "rooms"), (snapshot) => {
         const tbody = document.getElementById('roomTableBody');
         tbody.innerHTML = "";
-        window.allRooms = []; // Reset list
+        window.allRooms = []; 
 
         snapshot.forEach(doc => {
             const r = doc.data();
-            r.id = doc.id; // Lưu ID vào object để dùng sau
+            r.id = doc.id; 
             window.allRooms.push(r);
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><img src="${r.image}" onerror="this.src='https://via.placeholder.com/50'" style="width:50px; height:35px; object-fit:cover; border-radius:4px;"></td>
+                
                 <td><b>${r.name}</b><br><small>${r.type}</small></td>
+                
                 <td>${formatMoney(r.priceWeekday)}</td>
-                <td style="color:#2980b9">${formatMoney(r.priceWeekend)}</td>
+                
+                <td style="color:#2980b9; font-weight:500">${formatMoney(r.priceWeekend)}</td>
+                
+                <td style="color:#c0392b; font-weight:bold">${formatMoney(r.priceHoliday)}</td>
+                
                 <td>
                     <button class="btn-edit" data-id="${r.id}" style="color:#f39c12; border:none; background:none; cursor:pointer; font-size:1.1em; margin-right:10px;" title="Sửa">
                         <i class="fas fa-edit"></i>
@@ -303,3 +309,4 @@ function initBookingData() {
     });
 }
 window.verifyBooking = async (id) => await updateDoc(doc(db, "bookings", id), {status:'confirmed'});
+
