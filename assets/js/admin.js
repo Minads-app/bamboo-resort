@@ -1,3 +1,4 @@
+// 1. IMPORT THƯ VIỆN (Đã bao gồm setDoc để lưu cấu hình)
 import { db, auth } from '../../src/config/firebase-config.js';
 import { 
     collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, setDoc 
@@ -6,10 +7,11 @@ import {
     onAuthStateChanged, signInWithEmailAndPassword, signOut 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-console.log("⚡ Admin V3.2 Loaded - Full CRUD");
+console.log("⚡ Admin V3.3 Loaded - Full Stable");
 
-// --- 1. DOM ELEMENTS ---
+// --- 2. DOM ELEMENTS (Khai báo biến để dùng chung) ---
 const dom = {
+    // Auth & Layout
     loginContainer: document.getElementById('login-container'),
     dashboardContainer: document.getElementById('dashboard-container'),
     navItems: document.querySelectorAll('.nav-item'),
@@ -26,48 +28,61 @@ const dom = {
     roomDesc: document.getElementById('roomDesc'),
     roomForm: document.getElementById('roomForm'),
     imagePreview: document.getElementById('imagePreview'),
-    editRoomId: document.getElementById('editRoomId'), // Hidden Input
-    formTitle: document.getElementById('formTitle'),
+    
+    // Edit Mode Elements
+    editRoomId: document.getElementById('editRoomId'),
+    formTitle: document.getElementById('formTitle'), // Tiêu đề form (Thêm/Sửa)
     btnSaveRoom: document.getElementById('btnSaveRoom'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     
-    // Holiday Elements
+    // Settings Elements (Lễ Tết)
     holidayInput: document.getElementById('holidayInput'),
     holidayNote: document.getElementById('holidayNote'),
     btnAddHoliday: document.getElementById('btnAddHoliday'),
     holidayList: document.getElementById('holidayList')
 };
 
-// Biến toàn cục để lưu danh sách phòng (giúp lấy dữ liệu khi bấm Sửa nhanh hơn)
+// Biến lưu tạm danh sách phòng để load dữ liệu khi sửa
 window.allRooms = [];
 
-// --- 2. HELPERS ---
+// --- 3. HELPER FUNCTIONS (Hàm hỗ trợ) ---
+
+// Chuyển đổi link Google Drive sang link ảnh trực tiếp
 function convertDriveLink(url) {
     if (!url) return "";
+    // Regex tìm ID file (hỗ trợ cả link /file/d/ID và id=ID)
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-    return (match && match[1]) ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
+    
+    if (match && match[1]) {
+        // Dùng server lh3 googleusercontent để load ảnh nhanh & không bị lỗi
+        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    return url; // Nếu là link ảnh thường thì giữ nguyên
 }
 
+// Định dạng tiền tệ VNĐ
 function formatMoney(amount) {
     return new Intl.NumberFormat('vi-VN').format(amount || 0);
 }
 
-// --- 3. INIT ---
+// --- 4. KHỞI TẠO ỨNG DỤNG ---
 document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    setupTabNav();
-    setupLogin();
-    setupRoomManager();
-    setupSettingsManager();
+    checkAuth();          // Kiểm tra đăng nhập
+    setupTabNav();        // Cài đặt chuyển tab
+    setupLogin();         // Cài đặt form login
+    setupRoomManager();   // Logic quản lý phòng (Thêm/Sửa)
+    setupSettingsManager(); // Logic cấu hình lễ tết
 });
 
-// --- 4. AUTH & TABS ---
+// --- 5. AUTHENTICATION ---
 function checkAuth() {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             dom.loginContainer.style.display = 'none';
             dom.dashboardContainer.style.display = 'flex';
             document.getElementById('adminEmailDisplay').innerText = user.email;
+            
+            // Load dữ liệu khi đã đăng nhập
             initBookingData(); 
             initRoomData();
             initHolidayData();
@@ -76,38 +91,59 @@ function checkAuth() {
             dom.dashboardContainer.style.display = 'none';
         }
     });
-    document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+
+    // Đăng xuất
+    const btnLogout = document.getElementById('btnLogout');
+    if(btnLogout) btnLogout.addEventListener('click', () => signOut(auth));
 }
 
 function setupLogin() {
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try { await signInWithEmailAndPassword(auth, document.getElementById('admEmail').value, document.getElementById('admPass').value); } 
-        catch (err) { alert("Lỗi: " + err.message); }
-    });
+    const loginForm = document.getElementById('adminLoginForm');
+    if(loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admEmail').value;
+            const pass = document.getElementById('admPass').value;
+            try { 
+                await signInWithEmailAndPassword(auth, email, pass); 
+            } catch (err) { 
+                alert("Lỗi đăng nhập: " + err.message); 
+            }
+        });
+    }
 }
 
+// --- 6. TAB NAVIGATION ---
 function setupTabNav() {
     dom.navItems.forEach(item => {
         item.addEventListener('click', () => {
+            // Active menu item
             dom.navItems.forEach(n => n.classList.remove('active'));
             item.classList.add('active');
+            
+            // Show content section
             const target = item.getAttribute('data-target');
             dom.sections.forEach(s => s.classList.remove('active'));
-            document.getElementById(target).classList.add('active');
-            dom.pageTitle.innerText = item.querySelector('span').innerText;
+            const targetSection = document.getElementById(target);
+            if(targetSection) targetSection.classList.add('active');
+            
+            // Update Title
+            const span = item.querySelector('span');
+            if(span) dom.pageTitle.innerText = span.innerText;
         });
     });
 }
 
-// --- 5. ROOM MANAGER (LOGIC SỬA ĐƯỢC THÊM VÀO ĐÂY) ---
+// --- 7. QUẢN LÝ PHÒNG (ROOMS) ---
+
+// A. Hiển thị danh sách phòng
 function initRoomData() {
-    // 1. Khai báo tbody ngay đầu hàm để dùng chung
     const tbody = document.getElementById('roomTableBody');
+    if(!tbody) return;
+
     onSnapshot(collection(db, "rooms"), (snapshot) => {
-        const tbody = document.getElementById('roomTableBody');
         tbody.innerHTML = "";
-        window.allRooms = []; 
+        window.allRooms = []; // Reset cache
 
         snapshot.forEach(doc => {
             const r = doc.data();
@@ -121,9 +157,7 @@ function initRoomData() {
                 <td><b>${r.name}</b><br><small>${r.type}</small></td>
                 
                 <td>${formatMoney(r.priceWeekday)}</td>
-                
                 <td style="color:#2980b9; font-weight:500">${formatMoney(r.priceWeekend)}</td>
-                
                 <td style="color:#c0392b; font-weight:bold">${formatMoney(r.priceHoliday)}</td>
                 
                 <td>
@@ -139,233 +173,167 @@ function initRoomData() {
         });
     });
 
-    // Event Delegation (Xử lý click nút Sửa/Xóa)
-    document.getElementById('roomTableBody').addEventListener('click', async (e) => {
-        // XỬ LÝ XÓA
+    // Event Delegation cho nút Sửa/Xóa
+    tbody.addEventListener('click', async (e) => {
+        // Xóa
         if(e.target.closest('.btn-del')) {
-            if(confirm("Xóa phòng này?")) await deleteDoc(doc(db, "rooms", e.target.closest('.btn-del').dataset.id));
+            if(confirm("Xóa phòng này khỏi hệ thống?")) {
+                await deleteDoc(doc(db, "rooms", e.target.closest('.btn-del').dataset.id));
+            }
         }
-        // XỬ LÝ SỬA
+        // Sửa -> Đẩy dữ liệu lên Form
         if(e.target.closest('.btn-edit')) {
             const id = e.target.closest('.btn-edit').dataset.id;
-            loadRoomToForm(id); // Gọi hàm điền dữ liệu lên form
+            loadRoomToForm(id);
         }
     });
 }
 
+// B. Đưa dữ liệu lên Form để Sửa
 function loadRoomToForm(id) {
-    // Tìm phòng trong mảng đã lưu
     const room = window.allRooms.find(r => r.id === id);
     if (!room) return;
 
-    // Điền dữ liệu vào form
-    dom.editRoomId.value = room.id; // Quan trọng: Đánh dấu đang sửa ID này
+    // Fill inputs
+    dom.editRoomId.value = room.id;
     dom.roomName.value = room.name;
-    dom.roomType.value = room.roomType || room.type;
+    dom.roomType.value = room.roomType || room.type; // support cũ/mới
     dom.priceWeekday.value = room.priceWeekday;
     dom.priceWeekend.value = room.priceWeekend;
     dom.priceHoliday.value = room.priceHoliday;
     dom.roomImageUrl.value = room.image;
     dom.roomDesc.value = room.description;
 
-    // Trigger hiển thị ảnh preview
+    // Show preview & Update UI buttons
     dom.imagePreview.src = room.image;
     dom.imagePreview.style.display = 'block';
 
-    // Đổi giao diện sang chế độ "Cập nhật"
-    dom.formTitle.innerText = "Chỉnh Sửa Thông Tin Phòng";
-    dom.btnSaveRoom.innerText = "Cập Nhật Thay Đổi";
-    dom.btnSaveRoom.style.background = "#f39c12"; // Màu cam
-    dom.btnCancelEdit.style.display = "inline-block";
+    if(dom.formTitle) dom.formTitle.innerText = "Chỉnh Sửa Phòng";
+    if(dom.btnSaveRoom) {
+        dom.btnSaveRoom.innerText = "Cập Nhật";
+        dom.btnSaveRoom.style.background = "#f39c12"; // Cam
+    }
+    if(dom.btnCancelEdit) dom.btnCancelEdit.style.display = "inline-block";
 
-    // Cuộn lên form
+    // Scroll to form
     dom.roomForm.scrollIntoView({ behavior: 'smooth' });
 }
 
-function resetForm() {
-    dom.roomForm.reset();
-    dom.editRoomId.value = ""; // Xóa ID đang sửa
-    dom.imagePreview.style.display = 'none';
+// C. Reset Form về trạng thái thêm mới
+function resetRoomForm() {
+    if(dom.roomForm) dom.roomForm.reset();
+    if(dom.editRoomId) dom.editRoomId.value = "";
+    if(dom.imagePreview) dom.imagePreview.style.display = 'none';
     
-    // Trả lại giao diện "Thêm mới"
-    dom.formTitle.innerText = "Thêm Phòng Mới";
-    dom.btnSaveRoom.innerText = "Lưu Phòng";
-    dom.btnSaveRoom.style.background = "var(--primary-color)";
-    dom.btnCancelEdit.style.display = "none";
+    if(dom.formTitle) dom.formTitle.innerText = "Thêm Phòng Mới";
+    if(dom.btnSaveRoom) {
+        dom.btnSaveRoom.innerText = "Lưu Phòng";
+        dom.btnSaveRoom.style.background = "var(--primary-color)";
+    }
+    if(dom.btnCancelEdit) dom.btnCancelEdit.style.display = "none";
 }
 
+// D. Setup Logic Form
 function setupRoomManager() {
-    // Preview ảnh
-    dom.roomImageUrl.addEventListener('input', (e) => {
-        const url = convertDriveLink(e.target.value);
-        if(url) { dom.imagePreview.src = url; dom.imagePreview.style.display = 'block'; }
-        else { dom.imagePreview.style.display = 'none'; }
-    });
-
-    // Nút Hủy Sửa
-    dom.btnCancelEdit.addEventListener('click', resetForm);
-
-    // Submit Form (Xử lý cả Thêm và Sửa)
-    dom.roomForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const editingId = dom.editRoomId.value; // Lấy ID (nếu đang sửa)
-        const btn = dom.btnSaveRoom;
-        const oldText = btn.innerText;
-        btn.innerText = "Đang xử lý...";
-        btn.disabled = true;
-
-        try {
-            const finalImage = convertDriveLink(dom.roomImageUrl.value) || "https://via.placeholder.com/400";
-            
-            const payload = {
-                name: dom.roomName.value,
-                type: dom.roomType.value,
-                priceWeekday: Number(dom.priceWeekday.value),
-                priceWeekend: Number(dom.priceWeekend.value),
-                priceHoliday: Number(dom.priceHoliday.value),
-                price: Number(dom.priceWeekday.value), 
-                description: dom.roomDesc.value,
-                image: finalImage,
-                updatedAt: new Date()
-            };
-
-            if (editingId) {
-                // CHẾ ĐỘ SỬA: Update
-                await updateDoc(doc(db, "rooms", editingId), payload);
-                alert("Đã cập nhật thông tin phòng!");
-            } else {
-                // CHẾ ĐỘ THÊM: Add
-                payload.createdAt = new Date();
-                await addDoc(collection(db, "rooms"), payload);
-                alert("Đã thêm phòng mới thành công!");
+    // 1. Preview ảnh khi nhập link
+    if(dom.roomImageUrl) {
+        dom.roomImageUrl.addEventListener('input', (e) => {
+            const url = convertDriveLink(e.target.value);
+            if(url) { 
+                dom.imagePreview.src = url; 
+                dom.imagePreview.style.display = 'block'; 
+            } else { 
+                dom.imagePreview.style.display = 'none'; 
             }
+        });
+    }
 
-            resetForm(); // Reset form sau khi xong
+    // 2. Nút Hủy
+    if(dom.btnCancelEdit) dom.btnCancelEdit.addEventListener('click', resetRoomForm);
 
-        } catch (err) {
-            alert("Lỗi: " + err.message);
-        } finally {
-            btn.innerText = oldText; // Trả lại text cũ (Lưu Phòng / Cập nhật)
-            btn.disabled = false;
-        }
-    });
+    // 3. Submit Form (Thêm hoặc Sửa)
+    if(dom.roomForm) {
+        dom.roomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = dom.btnSaveRoom;
+            const oldText = btn.innerText;
+            btn.innerText = "Đang xử lý...";
+            btn.disabled = true;
+
+            try {
+                // Lấy link ảnh chuẩn
+                const finalImage = convertDriveLink(dom.roomImageUrl.value) || "https://via.placeholder.com/400x300?text=No+Image";
+                
+                const payload = {
+                    name: dom.roomName.value,
+                    type: dom.roomType.value,
+                    priceWeekday: Number(dom.priceWeekday.value),
+                    priceWeekend: Number(dom.priceWeekend.value),
+                    priceHoliday: Number(dom.priceHoliday.value),
+                    price: Number(dom.priceWeekday.value), // Default price display
+                    description: dom.roomDesc.value,
+                    image: finalImage,
+                    updatedAt: new Date()
+                };
+
+                const editingId = dom.editRoomId.value;
+                if (editingId) {
+                    // Update
+                    await updateDoc(doc(db, "rooms", editingId), payload);
+                    alert("Đã cập nhật phòng thành công!");
+                } else {
+                    // Create new
+                    payload.createdAt = new Date();
+                    await addDoc(collection(db, "rooms"), payload);
+                    alert("Đã thêm phòng mới!");
+                }
+                resetRoomForm();
+
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi: " + err.message);
+            } finally {
+                btn.innerText = oldText;
+                btn.disabled = false;
+            }
+        });
+    }
 }
 
-// --- 6. SETTINGS & BOOKINGS (GIỮ NGUYÊN) ---
+// --- 8. CẤU HÌNH LỄ TẾT (SETTINGS) ---
+
 async function initHolidayData() {
-    const docRef = doc(db, "settings", "holidays");
-    onSnapshot(docRef, (docSnap) => {
-        dom.holidayList.innerHTML = "";
+    const listContainer = document.getElementById('holidayList');
+    if(!listContainer) return;
+
+    onSnapshot(doc(db, "settings", "holidays"), (docSnap) => {
+        listContainer.innerHTML = "";
         if (docSnap.exists()) {
             const dates = docSnap.data().dates || [];
-            if(dates.length === 0) return dom.holidayList.innerHTML = "<p>Chưa có ngày lễ.</p>";
+            if(dates.length === 0) return listContainer.innerHTML = "<p style='color:#999; text-align:center'>Chưa có ngày lễ nào.</p>";
+
+            // Sắp xếp ngày tăng dần
             dates.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Render
             dates.forEach((item, index) => {
                 const tag = document.createElement('span');
                 tag.className = 'holiday-tag';
-                tag.innerHTML = `<b>${item.date.split('-').reverse().join('/')}</b>: ${item.note} <i class="fas fa-times" onclick="removeHoliday(${index})"></i>`;
-                dom.holidayList.appendChild(tag);
+                const dateVi = item.date.split('-').reverse().join('/');
+                tag.innerHTML = `<b>${dateVi}</b>: ${item.note} <i class="fas fa-times" onclick="removeHoliday(${index})" title="Xóa"></i>`;
+                listContainer.appendChild(tag);
             });
             window.currentHolidays = dates; 
-        } else { dom.holidayList.innerHTML = "<p>Chưa cấu hình.</p>"; window.currentHolidays = []; }
-    });
-}
-// Thay thế hàm setupSettingsManager cũ trong admin.js
-
-function setupSettingsManager() {
-    // 1. Kiểm tra xem nút có tồn tại không
-    if (!dom.btnAddHoliday) {
-        console.error("❌ LỖI: Không tìm thấy nút 'btnAddHoliday' trong HTML. Vui lòng kiểm tra file admin.html");
-        return;
-    }
-
-    console.log("✅ Đã tìm thấy nút Thêm Ngày Lễ -> Đang gắn sự kiện click...");
-
-    // 2. Gắn sự kiện Click
-    dom.btnAddHoliday.addEventListener('click', async () => {
-        console.log("🖱 Đã bấm nút Thêm Ngày Lễ");
-        
-        const btn = dom.btnAddHoliday;
-        const oldText = btn.innerHTML;
-        
-        try {
-            const dateVal = dom.holidayInput.value;
-            const noteVal = dom.holidayNote.value;
-
-            // Validate
-            if (!dateVal) {
-                alert("Vui lòng chọn ngày!");
-                return;
-            }
-
-            // Lock nút để tránh bấm nhiều lần
-            btn.innerHTML = "Đang lưu...";
-            btn.disabled = true;
-
-            // Lấy danh sách cũ
-            let newDates = window.currentHolidays || [];
-            
-            // Kiểm tra trùng ngày
-            if (newDates.some(d => d.date === dateVal)) {
-                alert("Ngày này đã có trong danh sách rồi!");
-                btn.innerHTML = oldText;
-                btn.disabled = false;
-                return;
-            }
-
-            // Thêm ngày mới
-            newDates.push({ 
-                date: dateVal, 
-                note: noteVal || 'Ngày lễ' 
-            });
-
-            // Gửi lên Firebase
-            console.log("uploadeading...", newDates);
-            await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
-            
-            console.log("✅ Lưu thành công!");
-            
-            // Reset form
-            dom.holidayInput.value = "";
-            dom.holidayNote.value = "";
-
-        } catch (error) {
-            console.error("❌ LỖI KHI LƯU:", error);
-            alert("Lỗi hệ thống: " + error.message);
-        } finally {
-            // Mở lại nút
-            btn.innerHTML = oldText;
-            btn.disabled = false;
+        } else {
+            listContainer.innerHTML = "<p style='color:#999; text-align:center'>Chưa cấu hình.</p>";
+            window.currentHolidays = [];
         }
     });
 }
-window.removeHoliday = async (i) => {
-    if(confirm("Xóa ngày lễ này?")) {
-        let d = window.currentHolidays; d.splice(i, 1);
-        await setDoc(doc(db, "settings", "holidays"), { dates: d });
-    }
-};
 
-function initBookingData() {
-    onSnapshot(query(collection(db, "bookings"), orderBy("createdAt", "desc")), (snapshot) => {
-        const tbody = document.getElementById('bookingTableBody');
-        tbody.innerHTML = "";
-        if(snapshot.empty) tbody.innerHTML = "<tr><td colspan='5'>Chưa có đơn hàng</td></tr>";
-        snapshot.forEach(doc => {
-            const b = doc.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${b.createdAt?.toDate().toLocaleDateString('vi-VN')}</td>
-                <td>${b.customerName}<br><small>${b.customerPhone}</small></td>
-                <td>${b.roomType}</td>
-                <td><span class="badge status-${b.status}">${b.status}</span></td>
-                <td>${b.status==='pending' ? `<button onclick="verifyBooking('${doc.id}')" style="color:green;cursor:pointer">✔ Duyệt</button>`:''}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    });
-}
-window.verifyBooking = async (id) => await updateDoc(doc(db, "bookings", id), {status:'confirmed'});
+function setupSettingsManager() {
+    if(!dom.btnAddHoliday) return;
 
-
-
+    dom.btnAddHoliday.addEventListener('click', async () => {
+        const dateVal = dom.holidayInput.value;
+        const noteVal = dom
