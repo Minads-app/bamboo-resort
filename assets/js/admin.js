@@ -102,6 +102,8 @@ function setupTabNav() {
 
 // --- 5. ROOM MANAGER (LOGIC SỬA ĐƯỢC THÊM VÀO ĐÂY) ---
 function initRoomData() {
+    // 1. Khai báo tbody ngay đầu hàm để dùng chung
+    const tbody = document.getElementById('roomTableBody');
     onSnapshot(collection(db, "rooms"), (snapshot) => {
         const tbody = document.getElementById('roomTableBody');
         tbody.innerHTML = "";
@@ -309,4 +311,5 @@ function initBookingData() {
     });
 }
 window.verifyBooking = async (id) => await updateDoc(doc(db, "bookings", id), {status:'confirmed'});
+
 
