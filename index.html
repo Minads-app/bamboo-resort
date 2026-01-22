@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Bamboo Hà Tiên Resort</title>
-    
-    <link rel="stylesheet" href="assets/css/style.css?v=3.0">
-    
+    <link rel="stylesheet" href="assets/css/style.css?v=4.0">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -46,12 +44,12 @@
                     <div class="form-group">
                         <label>Loại phòng</label>
                         <select>
-                            <option value="deluxe">Deluxe Ocean View</option>
-                            <option value="family">Family Suite</option>
-                            <option value="bungalow">Garden Bungalow</option>
+                            <option value="Deluxe Ocean View">Deluxe Ocean View</option>
+                            <option value="Family Suite">Family Suite</option>
+                            <option value="Garden Bungalow">Garden Bungalow</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Tìm Phòng</button>
+                    <button type="submit" class="btn btn-primary">Đặt Ngay</button>
                 </form>
             </div>
         </div>
@@ -79,46 +77,79 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 The Bamboo Hà Tiên Resort. All rights reserved.</p>
+            <p>&copy; 2024 The Bamboo Hà Tiên Resort.</p>
         </div>
     </footer>
 
     <div id="authModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            
+            <span class="close-modal" id="closeAuthModal">&times;</span>
             <div class="modal-header">
                 <button class="tab-btn active" data-target="loginForm">Đăng nhập</button>
                 <button class="tab-btn" data-target="registerForm">Đăng ký</button>
             </div>
-
             <div class="modal-body">
                 <form id="loginForm" class="auth-form active">
                     <div class="input-group">
                         <label>Email</label>
-                        <input type="email" id="loginEmail" placeholder="vidu@gmail.com" required>
+                        <input type="email" id="loginEmail" required>
                     </div>
                     <div class="input-group">
                         <label>Mật khẩu</label>
-                        <input type="password" id="loginPass" placeholder="******" required>
+                        <input type="password" id="loginPass" required>
                     </div>
                     <button type="submit" class="btn btn-primary full-width">Đăng nhập</button>
                 </form>
-
                 <form id="registerForm" class="auth-form">
                     <div class="input-group">
                         <label>Email đăng ký</label>
-                        <input type="email" id="regEmail" placeholder="vidu@gmail.com" required>
+                        <input type="email" id="regEmail" required>
                     </div>
                     <div class="input-group">
                         <label>Mật khẩu</label>
-                        <input type="password" id="regPass" placeholder="******" required>
+                        <input type="password" id="regPass" required>
                     </div>
                     <div class="input-group">
                         <label>Xác nhận mật khẩu</label>
                         <input type="password" id="regPassConfirm" required>
                     </div>
                     <button type="submit" class="btn btn-primary full-width">Đăng ký ngay</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeBookingModal">&times;</span>
+            <div class="modal-header" style="border-bottom: none; display: block;">
+                <h3 style="color: var(--primary-color);">Xác nhận Đặt phòng</h3>
+            </div>
+            <div class="modal-body">
+                <form id="confirmBookingForm">
+                    <div style="background: #f1f8e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p><strong>Phòng:</strong> <span id="summaryRoom">...</span></p>
+                        <p><strong>Ngày:</strong> <span id="summaryDates">...</span></p>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Họ và tên *</label>
+                        <input type="text" id="guestName" required placeholder="Ví dụ: Nguyễn Văn A">
+                    </div>
+                    <div class="input-group">
+                        <label>Số điện thoại *</label>
+                        <input type="tel" id="guestPhone" required placeholder="090xxxxxxx">
+                    </div>
+                    <div class="input-group">
+                        <label>Email (để nhận mã đơn)</label>
+                        <input type="email" id="guestEmail" placeholder="email@vidu.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Ghi chú</label>
+                        <input type="text" id="guestNote" placeholder="Yêu cầu đặc biệt...">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary full-width">HOÀN TẤT ĐẶT PHÒNG</button>
                 </form>
             </div>
         </div>
