@@ -230,29 +230,44 @@
             </div>
 
             <div id="section-settings" class="content-section">
-                <div class="panel">
-                    <h3><i class="fas fa-calendar-alt"></i> Cấu hình Ngày Lễ Tết</h3>
-                    <p style="color:#666; margin-bottom:20px;">Chọn các ngày đặc biệt để hệ thống tự động áp dụng mức <b>Giá Lễ Tết</b> khi khách đặt phòng.</p>
-                    
-                    <div style="display:flex; gap:10px; margin-bottom:25px; align-items:flex-end; flex-wrap: wrap;">
-                        <div>
-                            <label style="display:block; font-size:0.85rem; margin-bottom:5px; color:#555;">Chọn ngày</label>
-                            <input type="date" id="holidayInput" class="form-control" style="width:180px;">
-                        </div>
-                        <div style="flex-grow:1; max-width:300px;">
-                            <label style="display:block; font-size:0.85rem; margin-bottom:5px; color:#555;">Ghi chú dịp lễ</label>
-                            <input type="text" id="holidayNote" class="form-control" placeholder="VD: Giỗ tổ Hùng Vương">
-                        </div>
-                        <button id="btnAddHoliday" style="background:#2ecc71; color:white; border:none; padding:10px 20px; cursor:pointer; border-radius:4px; height: 38px;">
-                            <i class="fas fa-plus"></i> Thêm Ngày
-                        </button>
-                    </div>
-
-                    <div id="holidayList" style="border:1px dashed #ccc; padding:20px; border-radius:8px; min-height:100px; background:#fafafa;">
-                        <p style="color:#999; text-align:center; font-style:italic;">Đang tải danh sách...</p>
-                    </div>
+    <div class="panel">
+        <h3><i class="fas fa-calendar-alt"></i> Cấu hình Ngày Lễ Tết</h3>
+        
+        <div style="background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin-top:0; font-weight:bold; color:#2c3e50;">1. Thêm khoảng thời gian (Ví dụ: Nghỉ Tết 7 ngày)</p>
+            <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap: wrap;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px; color:#555;">Từ ngày</label>
+                    <input type="date" id="holidayStart" class="form-control" style="width:160px;">
                 </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px; color:#555;">Đến ngày</label>
+                    <input type="date" id="holidayEnd" class="form-control" style="width:160px;">
+                </div>
+                <div style="flex-grow:1; max-width:300px;">
+                    <label style="display:block; font-size:0.85rem; margin-bottom:5px; color:#555;">Tên dịp lễ</label>
+                    <input type="text" id="holidayNote" class="form-control" placeholder="VD: Tết Nguyên Đán">
+                </div>
+                <button id="btnAddHolidayRange" style="background:var(--primary-color); color:white; border:none; padding:10px 20px; cursor:pointer; border-radius:4px; height: 38px; font-weight:bold;">
+                    <i class="fas fa-plus"></i> Thêm
+                </button>
             </div>
+            
+            <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+            
+            <p style="margin-top:0; font-weight:bold; color:#2c3e50;">2. Công cụ hỗ trợ</p>
+            <button id="btnLoadVNHolidays" style="background:#e67e22; color:white; border:none; padding:8px 15px; cursor:pointer; border-radius:4px;">
+                <i class="fas fa-magic"></i> Tải nhanh Lễ Tết VN (2026)
+            </button>
+            <small style="color:#666; margin-left: 10px;">(Tự động thêm Tết Dương, Tết Âm, 30/4-1/5, 2/9...)</small>
+        </div>
+
+        <h4>Danh sách ngày áp dụng giá Lễ:</h4>
+        <div id="holidayList" style="border:1px dashed #ccc; padding:20px; border-radius:8px; min-height:100px; background:#fff;">
+            <p style="color:#999; text-align:center;">Đang tải dữ liệu...</p>
+        </div>
+    </div>
+</div>
 
         </main>
     </div>
@@ -260,3 +275,4 @@
     <script type="module" src="assets/js/admin.js"></script>
 </body>
 </html>
+
