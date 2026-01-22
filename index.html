@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Bamboo Hà Tiên Resort</title>
+    
+    <link rel="stylesheet" href="assets/css/style.css?v=3.0">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="#" class="logo">The Bamboo HT</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Trang chủ</a></li>
+                <li><a href="#rooms">Phòng nghỉ</a></li>
+                <li><a href="#dining">Nhà hàng (F&B)</a></li>
+                <li><a href="#" class="btn-login"><i class="fas fa-user"></i> Đăng nhập</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header id="home" class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1>Nghỉ dưỡng xanh tại Hà Tiên</h1>
+            <p>Tận hưởng không gian yên bình và dịch vụ đẳng cấp.</p>
+            
+            <div class="booking-widget">
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label>Check-in</label>
+                        <input type="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Check-out</label>
+                        <input type="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Loại phòng</label>
+                        <select>
+                            <option value="deluxe">Deluxe Ocean View</option>
+                            <option value="family">Family Suite</option>
+                            <option value="bungalow">Garden Bungalow</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Tìm Phòng</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <section id="dining" class="section">
+        <div class="container">
+            <h2 class="section-title">Dịch vụ F&B</h2>
+            <div class="service-grid">
+                <div class="card">
+                    <div class="card-icon"><i class="fas fa-concierge-bell"></i></div>
+                    <h3>Room Service</h3>
+                    <p>Gọi món tận phòng 24/7.</p>
+                    <button class="btn btn-outline">Xem Menu</button>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i class="fas fa-utensils"></i></div>
+                    <h3>Đặt bàn Nhà hàng</h3>
+                    <p>Thưởng thức hải sản tươi sống.</p>
+                    <button class="btn btn-outline">Đặt bàn</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 The Bamboo Hà Tiên Resort. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            
+            <div class="modal-header">
+                <button class="tab-btn active" data-target="loginForm">Đăng nhập</button>
+                <button class="tab-btn" data-target="registerForm">Đăng ký</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="loginForm" class="auth-form active">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" placeholder="vidu@gmail.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Mật khẩu</label>
+                        <input type="password" id="loginPass" placeholder="******" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width">Đăng nhập</button>
+                </form>
+
+                <form id="registerForm" class="auth-form">
+                    <div class="input-group">
+                        <label>Email đăng ký</label>
+                        <input type="email" id="regEmail" placeholder="vidu@gmail.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Mật khẩu</label>
+                        <input type="password" id="regPass" placeholder="******" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Xác nhận mật khẩu</label>
+                        <input type="password" id="regPassConfirm" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width">Đăng ký ngay</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

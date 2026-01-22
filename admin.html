@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Bamboo HT</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/admin.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>Bamboo Admin</h3>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active"><a href="#"><i class="fas fa-home"></i> Tổng quan</a></li>
+                <li><a href="#"><i class="fas fa-calendar-check"></i> Đặt phòng <span class="badge">3</span></a></li>
+                <li><a href="#"><i class="fas fa-utensils"></i> Đơn F&B</a></li>
+                <li><a href="#"><i class="fas fa-users"></i> Nhân viên</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Cấu hình</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h2>Dashboard</h2>
+                <div class="user-info">
+                    <span>Xin chào, Admin</span>
+                    <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Doanh thu hôm nay</h4>
+                    <p class="number">2.500.000 đ</p>
+                </div>
+                <div class="stat-card warning">
+                    <h4>Chờ xác nhận (Bill)</h4>
+                    <p class="number">3</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Phòng đang ở</h4>
+                    <p class="number">12/20</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Booking mới nhất</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã Đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Check-in</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#BK001</td>
+                                <td>Nguyễn Văn A</td>
+                                <td>20/10/2023</td>
+                                <td><span class="status verifying">Đang duyệt Bill</span></td>
+                                <td><button class="btn-sm">Xem</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="assets/js/admin.js"></script>
+</body>
+</html>

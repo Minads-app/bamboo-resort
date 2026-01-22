@@ -1,0 +1,236 @@
+/* 1. SETUP & VARIABLES */
+:root {
+    --primary-color: #2E7D32;
+    --primary-dark: #1b5e20;
+    --secondary-color: #81C784;
+    --text-color: #333;
+    --light-bg: #f4f4f4;
+    --white: #fff;
+    --danger: #d32f2f;
+    --shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* 2. UTILITIES */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+    font-size: 1rem;
+}
+
+.btn-primary { background: var(--primary-color); color: var(--white); }
+.btn-primary:hover { background: var(--primary-dark); }
+
+.btn-outline {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    background: transparent;
+}
+.btn-outline:hover { background: var(--primary-color); color: var(--white); }
+
+/* 3. NAVBAR */
+.navbar {
+    background: var(--white);
+    height: 70px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.nav-links { display: flex; gap: 25px; align-items: center; }
+.nav-links a { font-weight: 500; transition: 0.3s; }
+.nav-links a:hover { color: var(--primary-color); }
+
+.hamburger { display: none; font-size: 1.5rem; cursor: pointer; }
+
+/* 4. HERO SECTION */
+.hero {
+    position: relative;
+    height: 80vh;
+    background: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    color: var(--white);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 1;
+}
+
+.hero-content { position: relative; z-index: 2; width: 100%; max-width: 800px; }
+.hero h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.hero p { font-size: 1.2rem; margin-bottom: 30px; }
+
+/* 5. BOOKING WIDGET */
+.booking-widget {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    color: var(--text-color);
+}
+
+.booking-widget form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.form-group { flex: 1; min-width: 150px; text-align: left; }
+.form-group label { display: block; font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; }
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    outline: none;
+}
+.booking-widget .btn { height: 42px; }
+
+/* 6. SECTIONS & CARDS */
+.section { padding: 60px 0; }
+.section-title { text-align: center; margin-bottom: 40px; color: var(--primary-color); font-size: 2rem; }
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+}
+
+.card {
+    background: var(--white);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: transform 0.3s;
+}
+.card:hover { transform: translateY(-5px); }
+.card-icon { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 15px; }
+.card h3 { margin-bottom: 10px; }
+.card p { color: #666; margin-bottom: 20px; }
+
+footer { background: #333; color: #fff; text-align: center; padding: 20px 0; margin-top: auto; }
+
+/* 7. MODAL (FIXED & CENTERED) */
+.modal {
+    display: none; /* JS sẽ bật thành flex */
+    position: fixed; /* Cố định vị trí */
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Nền tối */
+    z-index: 9999; /* Luôn nổi trên cùng */
+    
+    /* Flexbox để căn giữa */
+    justify-content: center; 
+    align-items: center; 
+}
+
+.modal-content {
+    background: var(--white);
+    width: 90%;
+    max-width: 400px;
+    padding: 30px;
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close-modal {
+    position: absolute; right: 15px; top: 10px;
+    font-size: 2rem; cursor: pointer; color: #999; line-height: 1;
+}
+.close-modal:hover { color: var(--danger); }
+
+/* Modal Tabs */
+.modal-header { display: flex; border-bottom: 1px solid #eee; margin-bottom: 20px; }
+.tab-btn {
+    flex: 1; padding: 12px; background: none; border: none;
+    cursor: pointer; font-size: 1rem; color: #777; font-weight: 500;
+    border-bottom: 3px solid transparent;
+}
+.tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: bold; }
+
+/* Modal Forms */
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+.input-group { margin-bottom: 15px; }
+.full-width { width: 100%; margin-top: 10px; }
+
+/* 8. RESPONSIVE MOBILE */
+@media (max-width: 768px) {
+    .nav-links {
+        position: fixed;
+        right: -100%; top: 70px;
+        height: calc(100vh - 70px);
+        background: var(--white);
+        flex-direction: column;
+        width: 100%;
+        text-align: center;
+        padding-top: 40px;
+        transition: 0.3s;
+        box-shadow: -5px 0 10px rgba(0,0,0,0.1);
+    }
+    .nav-links.active { right: 0; }
+    .hamburger { display: block; }
+    
+    .hero h1 { font-size: 1.8rem; }
+    .booking-widget form { flex-direction: column; }
+    .booking-widget .btn { width: 100%; }
+}
