@@ -290,25 +290,109 @@ async function initHolidayData() {
     });
 }
 
+// --- LOGIC QUẢN LÝ LỄ TẾT V4.0 (THÔNG MINH) ---
+
 function setupSettingsManager() {
-    if(!dom.btnAddHoliday) return;
+    // DOM Elements mới
+    const startDateInput = document.getElementById('holidayStart');
+    const endDateInput = document.getElementById('holidayEnd');
+    const noteInput = document.getElementById('holidayNote');
+    const btnAdd = document.getElementById('btnAddHolidayRange');
+    const btnLoadVN = document.getElementById('btnLoadVNHolidays');
 
-    dom.btnAddHoliday.addEventListener('click', async () => {
-        const dateVal = dom.holidayInput.value;
-        const noteVal = dom.holidayNote.value;
-        if(!dateVal) return alert("Chọn ngày!");
+    if (!btnAdd) return;
 
+    // 1. XỬ LÝ THÊM KHOẢNG NGÀY (RANGE)
+    btnAdd.addEventListener('click', async () => {
+        const startVal = startDateInput.value;
+        const endVal = endDateInput.value; // Nếu bỏ trống ô này thì tính là 1 ngày
+        const noteVal = noteInput.value || "Lễ";
+
+        if (!startVal) return alert("Vui lòng chọn 'Từ ngày'!");
+
+        // Xác định ngày bắt đầu & kết thúc
+        const startDate = new Date(startVal);
+        const endDate = endVal ? new Date(endVal) : new Date(startVal);
+
+        if (endDate < startDate) return alert("Ngày kết thúc không được nhỏ hơn ngày bắt đầu!");
+
+        // Lấy danh sách cũ
         let newDates = window.currentHolidays || [];
-        if(newDates.some(d => d.date === dateVal)) return alert("Ngày này đã có!");
+        let countAdded = 0;
 
-        newDates.push({ date: dateVal, note: noteVal || 'Lễ' });
-        await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
-        
-        dom.holidayInput.value = "";
-        dom.holidayNote.value = "";
+        // VÒNG LẶP: Chạy từ ngày bắt đầu đến ngày kết thúc
+        for (let d = startDate; d <= endDate; d.setDate(d.getDate() + 1)) {
+            // Chuyển date object thành string 'YYYY-MM-DD' để lưu
+            const dateStr = d.toISOString().split('T')[0];
+
+            // Kiểm tra trùng: Chỉ thêm nếu chưa có
+            if (!newDates.some(item => item.date === dateStr)) {
+                newDates.push({ date: dateStr, note: noteVal });
+                countAdded++;
+            }
+        }
+
+        if (countAdded > 0) {
+            // Lưu 1 lần duy nhất lên Firebase
+            await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
+            alert(`Đã thêm thành công ${countAdded} ngày lễ!`);
+            
+            // Reset Form
+            startDateInput.value = "";
+            endDateInput.value = "";
+            noteInput.value = "";
+        } else {
+            alert("Các ngày bạn chọn đều đã có trong hệ thống rồi!");
+        }
     });
-}
 
+    // 2. XỬ LÝ GỢI Ý LỄ TẾT VIỆT NAM (2026)
+    if (btnLoadVN) {
+        btnLoadVN.addEventListener('click', async () => {
+            if (!confirm("Hệ thống sẽ thêm các ngày lễ lớn năm 2026 vào danh sách. Bạn có muốn tiếp tục?")) return;
+
+            let newDates = window.currentHolidays || [];
+            
+            // Danh sách cứng các ngày lễ 2026 (Dương lịch & Âm lịch quy đổi)
+            const vnHolidays2026 = [
+                { date: "2026-01-01", note: "Tết Dương Lịch" },
+                // Tết Âm Lịch 2026 (Dự kiến mùng 1 là 17/02/2026) -> Nghỉ 7 ngày từ 29 Tết
+                { date: "2026-02-16", note: "Nghỉ Tết Âm (29 Tết)" },
+                { date: "2026-02-17", note: "Tết Nguyên Đán (Mùng 1)" },
+                { date: "2026-02-18", note: "Tết Nguyên Đán (Mùng 2)" },
+                { date: "2026-02-19", note: "Tết Nguyên Đán (Mùng 3)" },
+                { date: "2026-02-20", note: "Nghỉ Tết Âm (Mùng 4)" },
+                { date: "2026-02-21", note: "Nghỉ Tết Âm (Mùng 5)" },
+                // Giỗ tổ Hùng Vương (10/3 Âm -> 25/04/2026)
+                { date: "2026-04-25", note: "Giỗ Tổ Hùng Vương" },
+                // 30/4 & 1/5
+                { date: "2026-04-30", note: "Giải phóng Miền Nam" },
+                { date: "2026-05-01", note: "Quốc tế Lao động" },
+                // Quốc Khánh 2/9 (Nghỉ 2 ngày)
+                { date: "2026-09-02", note: "Quốc Khánh" },
+                { date: "2026-09-03", note: "Nghỉ lễ Quốc Khánh" },
+                 // Noel
+                { date: "2026-12-24", note: "Giáng Sinh" },
+                { date: "2026-12-25", note: "Giáng Sinh" }
+            ];
+
+            let addedCount = 0;
+            vnHolidays2026.forEach(h => {
+                if (!newDates.some(exist => exist.date === h.date)) {
+                    newDates.push(h);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
+                alert(`Đã thêm ${addedCount} ngày lễ Việt Nam vào hệ thống!`);
+            } else {
+                alert("Các ngày lễ này đã có sẵn trong danh sách rồi.");
+            }
+        });
+    }
+}
 window.removeHoliday = async (index) => {
     if(confirm("Xóa ngày lễ này?")) {
         let newDates = window.currentHolidays;
@@ -348,3 +432,4 @@ window.verifyBooking = async (id) => {
 };
 
 // --- KẾT THÚC FILE ---
+
