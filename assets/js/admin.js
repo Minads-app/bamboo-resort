@@ -402,28 +402,121 @@ window.removeHoliday = async (index) => {
 };
 
 // --- 9. BOOKINGS ---
+// --- TÌM VÀ THAY THẾ HÀM initBookingData TRONG ADMIN.JS ---
+
 function initBookingData() {
     const tbody = document.getElementById('bookingTableBody');
     if(!tbody) return;
 
+    // 1. Lắng nghe dữ liệu
     onSnapshot(query(collection(db, "bookings"), orderBy("createdAt", "desc")), (snapshot) => {
         tbody.innerHTML = "";
-        if(snapshot.empty) tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>Chưa có đơn hàng</td></tr>";
+        if(snapshot.empty) {
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Chưa có đơn hàng nào</td></tr>";
+            return;
+        }
 
         snapshot.forEach(doc => {
             const b = doc.data();
             const tr = document.createElement('tr');
+            
+            // Xử lý hiển thị ngày tháng
+            const dateStr = b.createdAt?.toDate ? b.createdAt.toDate().toLocaleDateString('vi-VN') : '---';
+            
+            // Xử lý hiển thị Trạng thái (Badge màu)
+            let statusBadge = '';
+            if(b.status === 'pending') statusBadge = '<span class="badge status-pending">Chờ duyệt</span>';
+            else if(b.status === 'confirmed') statusBadge = '<span class="badge status-confirmed">Đã duyệt</span>';
+            else statusBadge = '<span class="badge" style="background:#95a5a6; color:white;">Đã hủy</span>';
+
+            // --- CỘT HÀNH ĐỘNG (LOGIC MỚI) ---
+            // Chỉ hiện nút Duyệt & Không duyệt nếu đơn đang CHỜ (pending)
+            const btnVerify = b.status === 'pending' 
+                ? `<button class="action-btn btn-verify" onclick="verifyBooking('${doc.id}')" title="Duyệt đơn này"><i class="fas fa-check"></i></button>` 
+                : '';
+            
+            const btnReject = b.status === 'pending'
+                ? `<button class="action-btn btn-reject" onclick="rejectBooking('${doc.id}')" title="Không duyệt / Hủy"><i class="fas fa-ban"></i></button>`
+                : '';
+
             tr.innerHTML = `
-                <td>${b.createdAt?.toDate ? b.createdAt.toDate().toLocaleDateString('vi-VN') : '---'}</td>
-                <td><b>${b.customerName}</b><br><small>${b.customerPhone}</small></td>
-                <td>${b.roomType}</td>
-                <td><span class="badge status-${b.status}">${b.status}</span></td>
-                <td>${b.status==='pending' ? `<button onclick="verifyBooking('${doc.id}')" style="color:green;cursor:pointer;border:1px solid green;background:white;padding:2px 5px;border-radius:3px;">✔ Duyệt</button>`:''}</td>
+                <td>${dateStr}</td>
+                <td>
+                    <b>${b.customerName}</b><br>
+                    <small>${b.customerPhone}</small>
+                    ${b.note ? `<br><small style="color:#d35400; font-style:italic;">"${b.note}"</small>` : ''}
+                </td>
+                <td>
+                    <span style="color:var(--primary-color); font-weight:500">${b.roomType}</span><br>
+                    <small>${b.checkIn} ➝ ${b.checkOut}</small>
+                </td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div style="display:flex;">
+                        ${btnVerify}
+                        ${btnReject}
+                        <button class="action-btn btn-edit-booking" onclick="editBookingInfo('${doc.id}', '${b.customerName}', '${b.customerPhone}')" title="Sửa thông tin khách">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="action-btn btn-delete-booking" onclick="deleteBooking('${doc.id}')" title="Xóa vĩnh viễn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(tr);
         });
     });
 }
+
+// --- CÁC HÀM XỬ LÝ HÀNH ĐỘNG (Thêm vào cuối file admin.js hoặc ngay dưới hàm trên) ---
+
+// 1. Duyệt đơn (Giữ nguyên)
+window.verifyBooking = async (id) => {
+    if(confirm("Xác nhận DUYỆT đơn hàng này? Khách sẽ được tính là đã đặt thành công.")) {
+        await updateDoc(doc(db, "bookings", id), { status: 'confirmed' });
+    }
+};
+
+// 2. Không duyệt / Hủy đơn (Mới)
+window.rejectBooking = async (id) => {
+    const reason = prompt("Nhập lý do không duyệt (hoặc để trống):", "Khách hủy / Hết phòng");
+    if(reason !== null) { // Nếu bấm Cancel thì không làm gì
+        await updateDoc(doc(db, "bookings", id), { 
+            status: 'cancelled',
+            cancelReason: reason
+        });
+    }
+};
+
+// 3. Xóa đơn vĩnh viễn (Mới)
+window.deleteBooking = async (id) => {
+    if(confirm("⚠ CẢNH BÁO: Bạn có chắc muốn XÓA VĨNH VIỄN đơn này không?\nHành động này không thể hoàn tác!")) {
+        await deleteDoc(doc(db, "bookings", id));
+    }
+};
+
+// 4. Sửa thông tin khách (Mới)
+window.editBookingInfo = async (id, oldName, oldPhone) => {
+    // Hỏi tên mới
+    const newName = prompt("Sửa tên khách hàng:", oldName);
+    if(newName === null) return; // Bấm hủy
+
+    // Hỏi sđt mới
+    const newPhone = prompt("Sửa số điện thoại:", oldPhone);
+    if(newPhone === null) return;
+
+    // Cập nhật
+    if(newName && newPhone) {
+        await updateDoc(doc(db, "bookings", id), {
+            customerName: newName,
+            customerPhone: newPhone
+        });
+        alert("Đã cập nhật thông tin khách hàng!");
+    } else {
+        alert("Tên và SĐT không được để trống!");
+    }
+};
 
 window.verifyBooking = async (id) => {
     if(confirm("Xác nhận duyệt đơn hàng này?")) {
@@ -432,4 +525,5 @@ window.verifyBooking = async (id) => {
 };
 
 // --- KẾT THÚC FILE ---
+
 
