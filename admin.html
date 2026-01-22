@@ -4,131 +4,190 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - Bamboo Hà Tiên</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=5.0">
+    <link rel="stylesheet" href="assets/css/style.css?v=7.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    
     <style>
-        /* CSS CŨ GIỮ NGUYÊN */
-        body { background-color: #f4f6f8; display: flex; height: 100vh; overflow: hidden; margin: 0; }
+        /* CSS RIÊNG CHO ADMIN DASHBOARD */
+        body { background-color: #f4f6f8; display: flex; height: 100vh; overflow: hidden; margin: 0; font-family: 'Roboto', sans-serif; }
+        
+        /* 1. Login Screen */
+        #login-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: #fff; padding: 40px; border-radius: 8px; width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .login-box h2 { color: var(--primary-color); margin-bottom: 20px; }
+        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .login-box button:hover { background: #1b5e20; }
+
+        /* 2. Dashboard Layout */
+        #dashboard-container { display: none; width: 100%; height: 100%; } /* Ẩn mặc định */
+        
+        /* Sidebar */
         .sidebar { width: 250px; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid #333; }
-        .menu { list-style: none; padding: 20px 0; }
-        .menu li a { display: block; padding: 15px 25px; color: #bbb; text-decoration: none; display: flex; align-items: center; gap: 10px; }
-        .menu li a:hover, .menu li.active a { background: var(--primary-color); color: #fff; }
+        .sidebar-header h3 { color: var(--primary-color); margin: 0; }
+        .menu { list-style: none; padding: 20px 0; margin: 0; }
+        .menu li a { display: flex; align-items: center; gap: 10px; padding: 15px 25px; color: #bbb; text-decoration: none; transition: 0.3s; cursor: pointer; }
+        .menu li:hover a, .menu li.active a { background: var(--primary-color); color: #fff; }
+
+        /* Main Content */
         .main-content { flex: 1; overflow-y: auto; padding: 20px; }
-        .top-bar { background: #fff; padding: 15px 30px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid var(--primary-color); }
-        .stat-card .number { font-size: 1.8rem; font-weight: bold; color: #333; }
-        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* Top Bar */
+        .top-bar { background: #fff; padding: 15px 30px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        /* Tabs & Panels */
+        .content-section { display: none; animation: fadeIn 0.3s ease; }
+        .content-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .panel h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+
+        /* Form Elements */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea.form-control { resize: vertical; }
+
+        /* Table */
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; background: #f8f9fa; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
+        th { text-align: left; padding: 12px; background: #f8f9fa; color: #666; font-weight: 600; border-bottom: 2px solid #ddd; }
+        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        
+        /* Helpers */
         .badge { padding: 5px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
-        .bg-pending { background: #fff3cd; color: #856404; }
-        .bg-confirmed { background: #d4edda; color: #155724; }
-        .bg-cancelled { background: #f8d7da; color: #721c24; }
-        .btn-action { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; color: #fff; font-size: 0.8rem; margin-right: 5px; }
-        .btn-approve { background: #28a745; }
-        .btn-cancel { background: #dc3545; }
-
-        /* --- CSS MỚI CHO ADMIN LOGIN --- */
-        #dashboard-container {
-            display: none; /* Mặc định ẩn Dashboard */
-            width: 100%;
-            height: 100%;
-            display: flex; /* Sẽ được JS bật lại nếu đã login */
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        
+        .preview-img { width: 100px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px dashed #ccc; display: none; margin-top: 10px; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .sidebar { width: 70px; }
+            .sidebar h3, .menu span { display: none; }
+            .menu li a { justify-content: center; }
         }
-
-        #login-container {
-            display: flex; /* Mặc định hiện Form Login */
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100vh;
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
-            background-size: cover;
-        }
-
-        .admin-login-box {
-            background: #fff;
-            padding: 40px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .admin-login-box h2 { color: var(--primary-color); margin-bottom: 20px; }
-        .admin-login-box input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .admin-login-box button { width: 100%; padding: 12px; background: var(--primary-color); color: #fff; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-        .admin-login-box button:hover { background: #1b5e20; }
     </style>
 </head>
 <body>
 
     <div id="login-container">
-        <div class="admin-login-box">
-            <h2><i class="fas fa-user-shield"></i> Bamboo Admin</h2>
-            <p style="margin-bottom: 20px; color: #666;">Vui lòng đăng nhập để quản lý</p>
+        <div class="login-box">
+            <h2><i class="fas fa-shield-alt"></i> Admin Portal</h2>
             <form id="adminLoginForm">
                 <input type="email" id="admEmail" placeholder="Email quản trị" required>
                 <input type="password" id="admPass" placeholder="Mật khẩu" required>
                 <button type="submit">Đăng nhập</button>
             </form>
-            <p id="loginError" style="color: red; margin-top: 10px; display: none;"></p>
+            <p id="loginError" style="color: #ff6b6b; margin-top: 10px; font-size: 0.9rem; display: none;"></p>
         </div>
     </div>
 
-    <div id="dashboard-container" style="display: none;">
+    <div id="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h3>Bamboo Admin</h3>
             </div>
             <ul class="menu">
-                <li><a href="#"><i class="fas fa-chart-line"></i> Tổng quan</a></li>
-                <li class="active"><a href="#"><i class="fas fa-calendar-check"></i> Đặt phòng</a></li>
+                <li class="active nav-item" data-target="section-bookings">
+                    <a><i class="fas fa-calendar-check"></i> <span>Đặt phòng</span></a>
+                </li>
+                <li class="nav-item" data-target="section-rooms">
+                    <a><i class="fas fa-bed"></i> <span>Quản lý Phòng</span></a>
+                </li>
             </ul>
         </aside>
 
         <main class="main-content">
             <header class="top-bar">
-                <h2>Quản lý Đặt phòng</h2>
+                <h2 id="pageTitle">Quản lý Đặt phòng</h2>
                 <div class="user-info">
-                    <span id="adminEmailDisplay">Admin</span>
-                    <button id="btnLogout" class="btn btn-outline" style="margin-left: 10px; font-size: 0.8rem;">Đăng xuất</button>
+                    <span id="adminEmailDisplay" style="margin-right: 15px; font-weight: 500;">...</span>
+                    <button id="btnLogout" class="btn-outline" style="padding: 5px 15px; cursor: pointer; background: transparent; border: 1px solid #ccc; border-radius: 4px;">Đăng xuất</button>
                 </div>
             </header>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h4>Đơn chờ duyệt</h4>
-                    <div class="number" id="countPending">0</div>
+            <div id="section-bookings" class="content-section active">
+                <div class="form-grid">
+                    <div class="panel" style="text-align: center;">
+                        <h4 style="margin:0; color:#888;">Đơn chờ duyệt</h4>
+                        <div id="countPending" style="font-size: 2rem; font-weight: bold; color: #f39c12;">0</div>
+                    </div>
+                    <div class="panel" style="text-align: center;">
+                        <h4 style="margin:0; color:#888;">Tổng đơn hàng</h4>
+                        <div id="countTotal" style="font-size: 2rem; font-weight: bold; color: var(--primary-color);">0</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <h4>Tổng đơn hàng</h4>
-                    <div class="number" id="countTotal">0</div>
+
+                <div class="panel">
+                    <h3>Danh sách Đặt phòng (Real-time)</h3>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ngày đặt</th>
+                                    <th>Khách hàng</th>
+                                    <th>Chi tiết Phòng</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingTableBody">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <div class="panel">
-                <h3>Booking Mới Nhất</h3>
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ngày đặt</th>
-                                <th>Khách hàng</th>
-                                <th>Chi tiết phòng</th>
-                                <th>Trạng thái</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bookingTableBody">
-                            </tbody>
-                    </table>
+            <div id="section-rooms" class="content-section">
+                <div class="panel">
+                    <h3><i class="fas fa-plus-circle"></i> Thêm Phòng Mới</h3>
+                    <form id="roomForm">
+                        <div class="form-grid">
+                            <input type="text" id="roomName" class="form-control" placeholder="Tên phòng (VD: Deluxe Ocean View)" required>
+                            <input type="number" id="roomPrice" class="form-control" placeholder="Giá tiền (VNĐ)" required>
+                        </div>
+                        <div class="form-grid">
+                            <select id="roomType" class="form-control">
+                                <option value="Deluxe Ocean View">Deluxe Ocean View</option>
+                                <option value="Family Suite">Family Suite</option>
+                                <option value="Garden Bungalow">Garden Bungalow</option>
+                                <option value="Standard Room">Standard Room</option>
+                            </select>
+                            <input type="text" id="roomImageUrl" class="form-control" placeholder="Dán Link ảnh (Google Drive/Unsplash...)" required>
+                        </div>
+                        <textarea id="roomDesc" class="form-control" rows="3" placeholder="Mô tả chi tiết tiện ích phòng..."></textarea>
+                        
+                        <img id="imagePreview" class="preview-img" src="" alt="Xem trước">
+
+                        <div style="margin-top: 15px;">
+                            <button type="submit" style="background: var(--primary-color); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Lưu Dữ Liệu</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <h3>Danh sách Phòng trên Web</h3>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="100">Hình ảnh</th>
+                                    <th>Tên & Loại</th>
+                                    <th>Giá niêm yết</th>
+                                    <th>Mô tả</th>
+                                    <th>Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roomTableBody">
+                                </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
         </main>
     </div>
 
