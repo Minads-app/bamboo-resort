@@ -1,185 +1,173 @@
-// assets/js/admin.js
-
-// 1. IMPORT
 import { db, auth } from '../../src/config/firebase-config.js';
 import { 
     collection, query, orderBy, onSnapshot, doc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { 
+    onAuthStateChanged, signInWithEmailAndPassword, signOut 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-console.log("⚡ Admin Script Loaded");
+console.log("⚡ Admin Script Loaded with Login Gate");
 
-// 2. DOM Elements
+// DOM Elements
+const loginContainer = document.getElementById('login-container');
+const dashboardContainer = document.getElementById('dashboard-container');
+const adminLoginForm = document.getElementById('adminLoginForm');
+const loginError = document.getElementById('loginError');
+
 const tableBody = document.getElementById('bookingTableBody');
-const adminEmailDisplay = document.getElementById('adminEmail');
+const adminEmailDisplay = document.getElementById('adminEmailDisplay');
 const btnLogout = document.getElementById('btnLogout');
 const countPendingDisplay = document.getElementById('countPending');
+const countTotalDisplay = document.getElementById('countTotal');
 
-// 3. KHỞI TẠO
+// KHỞI TẠO
 document.addEventListener('DOMContentLoaded', () => {
-    checkAdminAuth();
-});
-
-// --- A. AUTHENTICATION & SECURITY ---
-function checkAdminAuth() {
+    // 1. Lắng nghe trạng thái đăng nhập
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            console.log("Admin logged in:", user.email);
+            // ĐÃ ĐĂNG NHẬP -> HIỆN DASHBOARD
+            console.log("Admin Logged In:", user.email);
+            loginContainer.style.display = 'none';
+            dashboardContainer.style.display = 'flex'; // Trả lại display flex cho dashboard
+            
             adminEmailDisplay.innerText = user.email;
-            initRealtimeData(); // Chỉ tải dữ liệu khi đã login
+            initRealtimeData(); // Bắt đầu tải dữ liệu
         } else {
-            // Nếu chưa đăng nhập, đá về trang chủ hoặc trang login
-            alert("Bạn chưa đăng nhập! Vui lòng đăng nhập để truy cập Admin.");
-            window.location.href = "index.html";
+            // CHƯA ĐĂNG NHẬP -> HIỆN LOGIN FORM
+            console.log("No User -> Show Login Form");
+            loginContainer.style.display = 'flex';
+            dashboardContainer.style.display = 'none';
         }
     });
 
-    // Sự kiện Đăng xuất
-    if (btnLogout) {
-        btnLogout.addEventListener('click', async () => {
-            if(confirm("Đăng xuất khỏi trang Admin?")) {
-                await signOut(auth);
-                window.location.href = "index.html";
+    // 2. Xử lý Đăng nhập ngay tại Admin Page
+    if (adminLoginForm) {
+        adminLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admEmail').value;
+            const pass = document.getElementById('admPass').value;
+            const btn = adminLoginForm.querySelector('button');
+
+            try {
+                btn.innerText = "Đang kiểm tra...";
+                btn.disabled = true;
+                loginError.style.display = 'none';
+
+                // Gọi hàm login của Firebase trực tiếp
+                await signInWithEmailAndPassword(auth, email, pass);
+                
+                // Nếu thành công, onAuthStateChanged ở trên sẽ tự chạy và chuyển cảnh
+                // Không cần code chuyển trang ở đây
+
+            } catch (error) {
+                console.error(error);
+                loginError.style.display = 'block';
+                loginError.innerText = "Sai email hoặc mật khẩu!";
+                btn.innerText = "Đăng nhập";
+                btn.disabled = false;
             }
         });
     }
-}
 
-// --- B. REAL-TIME DATA HANDLING ---
+    // 3. Xử lý Đăng xuất
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            if(confirm("Đăng xuất Admin?")) {
+                await signOut(auth);
+                // Sau khi signout, onAuthStateChanged tự chạy -> hiện lại Login Form
+            }
+        });
+    }
+});
+
+// --- LOGIC LOAD DỮ LIỆU (GIỐNG CŨ) ---
 function initRealtimeData() {
-    // Truy vấn: Lấy collection bookings, sắp xếp ngày tạo mới nhất lên đầu
     const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
 
-    // Lắng nghe thay đổi
     onSnapshot(q, (snapshot) => {
-        tableBody.innerHTML = ""; // Xóa dữ liệu cũ
-        
-        let pendingCount = 0;
+        tableBody.innerHTML = "";
+        let pending = 0;
+        let total = 0;
 
         if (snapshot.empty) {
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">Chưa có đơn đặt phòng nào.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Chưa có dữ liệu</td></tr>`;
             return;
         }
 
         snapshot.forEach((doc) => {
             const booking = doc.data();
-            booking.id = doc.id; // Lấy ID để dùng cho nút bấm
-            
-            // Đếm số đơn chờ
-            if (booking.status === 'pending') pendingCount++;
-            
-            // Vẽ dòng
+            booking.id = doc.id;
+            total++;
+            if (booking.status === 'pending') pending++;
             renderBookingRow(booking);
         });
 
-        // Cập nhật số liệu thống kê
-        if(countPendingDisplay) countPendingDisplay.innerText = pendingCount;
-    }, (error) => {
-        console.error("Lỗi lấy dữ liệu:", error);
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Lỗi kết nối: ${error.message}</td></tr>`;
+        if(countPendingDisplay) countPendingDisplay.innerText = pending;
+        if(countTotalDisplay) countTotalDisplay.innerText = total;
     });
 }
 
-// --- C. RENDER UI ---
 function renderBookingRow(booking) {
     const tr = document.createElement('tr');
     
-    // 1. Xử lý thời gian (Check null an toàn)
-    const createdDate = booking.createdAt && booking.createdAt.toDate 
-        ? booking.createdAt.toDate().toLocaleString('vi-VN') 
-        : 'N/A';
+    // Format Date
+    const date = booking.createdAt?.toDate ? booking.createdAt.toDate().toLocaleString('vi-VN') : '---';
 
-    // 2. Xử lý Badge Trạng thái
-    let statusHtml = '';
-    let actionHtml = '';
+    // Badge
+    let badge = `<span class="badge bg-pending">? ${booking.status}</span>`;
+    let actions = '';
 
-    switch (booking.status) {
-        case 'pending':
-            statusHtml = '<span class="badge bg-pending">Chờ duyệt</span>';
-            // Chỉ hiện nút duyệt/hủy khi trạng thái là pending
-            actionHtml = `
-                <button class="btn-action btn-approve" data-id="${booking.id}">✔ Duyệt</button>
-                <button class="btn-action btn-cancel" data-id="${booking.id}">✖ Hủy</button>
-            `;
-            break;
-        case 'confirmed':
-            statusHtml = '<span class="badge bg-confirmed">Đã duyệt</span>';
-            actionHtml = '<span style="color: #28a745; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Xong</span>';
-            break;
-        case 'cancelled':
-            statusHtml = '<span class="badge bg-cancelled">Đã hủy</span>';
-            actionHtml = '<span style="color: #dc3545; font-size: 0.8rem;">Đã hủy</span>';
-            break;
-        default:
-            statusHtml = `<span class="badge">${booking.status}</span>`;
+    if (booking.status === 'pending') {
+        badge = `<span class="badge bg-pending">Chờ duyệt</span>`;
+        actions = `
+            <button class="btn-action btn-approve" data-id="${booking.id}">✔</button>
+            <button class="btn-action btn-cancel" data-id="${booking.id}">✖</button>
+        `;
+    } else if (booking.status === 'confirmed') {
+        badge = `<span class="badge bg-confirmed">Đã duyệt</span>`;
+        actions = `<span style="color:green"><i class="fas fa-check"></i></span>`;
+    } else {
+        badge = `<span class="badge bg-cancelled">Hủy</span>`;
+        actions = `<span style="color:red">Đã hủy</span>`;
     }
 
-    // 3. Nội dung HTML của dòng
     tr.innerHTML = `
-        <td>${createdDate}</td>
+        <td>${date}</td>
         <td>
-            <strong>${booking.customerName || 'Khách vãng lai'}</strong><br>
-            <span style="color: #666; font-size: 0.85rem;">${booking.customerPhone || '---'}</span><br>
-            <span style="color: #888; font-size: 0.8rem;">${booking.customerEmail || ''}</span>
+            <b>${booking.customerName}</b><br>
+            ${booking.customerPhone}
         </td>
         <td>
-            <strong style="color: var(--primary-color)">${booking.roomType}</strong><br>
-            Check-in: ${booking.checkIn}<br>
-            Check-out: ${booking.checkOut}
+            <span style="color:var(--primary-color)">${booking.roomType}</span><br>
+            <small>${booking.checkIn} -> ${booking.checkOut}</small>
         </td>
-        <td>
-            <em style="color: #666; font-size: 0.9rem;">${booking.note || 'Không có'}</em>
-            ${booking.cancelReason ? `<br><small style="color:red">Lý do hủy: ${booking.cancelReason}</small>` : ''}
-        </td>
-        <td>${statusHtml}</td>
-        <td>${actionHtml}</td>
+        <td>${badge}</td>
+        <td>${actions}</td>
     `;
-
     tableBody.appendChild(tr);
 }
 
-// --- D. EVENT DELEGATION (Xử lý click nút trong bảng) ---
+// Event Delegation cho nút bấm
 tableBody.addEventListener('click', async (e) => {
     const target = e.target;
     const id = target.getAttribute('data-id');
 
-    // 1. Nút Duyệt
     if (target.classList.contains('btn-approve')) {
-        if(confirm("Xác nhận phòng này đã được thanh toán/giữ chỗ?")) {
-            await updateBookingStatus(id, 'confirmed');
-        }
+        if(confirm("Duyệt đơn này?")) await updateStatus(id, 'confirmed');
     }
-
-    // 2. Nút Hủy
     if (target.classList.contains('btn-cancel')) {
-        const reason = prompt("Nhập lý do hủy (Khách hủy / Hết phòng / Spam):");
-        if(reason) {
-            await updateBookingStatus(id, 'cancelled', reason);
-        }
+        const reason = prompt("Lý do hủy:");
+        if(reason) await updateStatus(id, 'cancelled', reason);
     }
 });
 
-// --- E. LOGIC UPDATE FIRESTORE ---
-async function updateBookingStatus(bookingId, newStatus, reason = "") {
+async function updateStatus(id, status, reason="") {
     try {
-        const bookingRef = doc(db, "bookings", bookingId);
-        
-        // Tạo object dữ liệu cần update
-        const updateData = {
-            status: newStatus,
-            updatedAt: new Date()
-        };
-        
-        // Nếu hủy thì lưu thêm lý do
-        if(reason) updateData.cancelReason = reason;
-
-        await updateDoc(bookingRef, updateData);
-        
-        // Không cần alert hay reload, onSnapshot sẽ tự cập nhật giao diện
-        console.log(`Đã cập nhật đơn ${bookingId} sang trạng thái ${newStatus}`);
-
-    } catch (error) {
-        console.error("Lỗi cập nhật:", error);
-        alert("Có lỗi xảy ra: " + error.message);
+        await updateDoc(doc(db, "bookings", id), {
+            status: status,
+            cancelReason: reason
+        });
+    } catch (e) {
+        alert("Lỗi: " + e.message);
     }
 }
