@@ -270,19 +270,74 @@ async function initHolidayData() {
         } else { dom.holidayList.innerHTML = "<p>Chưa cấu hình.</p>"; window.currentHolidays = []; }
     });
 }
+// Thay thế hàm setupSettingsManager cũ trong admin.js
 
 function setupSettingsManager() {
-    if(dom.btnAddHoliday) {
-        dom.btnAddHoliday.addEventListener('click', async () => {
-            const dateVal = dom.holidayInput.value;
-            if(!dateVal) return alert("Chọn ngày!");
-            let newDates = window.currentHolidays || [];
-            if(newDates.some(d => d.date === dateVal)) return alert("Ngày này đã có!");
-            newDates.push({ date: dateVal, note: dom.holidayNote.value || 'Lễ' });
-            await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
-            dom.holidayInput.value = ""; dom.holidayNote.value = "";
-        });
+    // 1. Kiểm tra xem nút có tồn tại không
+    if (!dom.btnAddHoliday) {
+        console.error("❌ LỖI: Không tìm thấy nút 'btnAddHoliday' trong HTML. Vui lòng kiểm tra file admin.html");
+        return;
     }
+
+    console.log("✅ Đã tìm thấy nút Thêm Ngày Lễ -> Đang gắn sự kiện click...");
+
+    // 2. Gắn sự kiện Click
+    dom.btnAddHoliday.addEventListener('click', async () => {
+        console.log("🖱 Đã bấm nút Thêm Ngày Lễ");
+        
+        const btn = dom.btnAddHoliday;
+        const oldText = btn.innerHTML;
+        
+        try {
+            const dateVal = dom.holidayInput.value;
+            const noteVal = dom.holidayNote.value;
+
+            // Validate
+            if (!dateVal) {
+                alert("Vui lòng chọn ngày!");
+                return;
+            }
+
+            // Lock nút để tránh bấm nhiều lần
+            btn.innerHTML = "Đang lưu...";
+            btn.disabled = true;
+
+            // Lấy danh sách cũ
+            let newDates = window.currentHolidays || [];
+            
+            // Kiểm tra trùng ngày
+            if (newDates.some(d => d.date === dateVal)) {
+                alert("Ngày này đã có trong danh sách rồi!");
+                btn.innerHTML = oldText;
+                btn.disabled = false;
+                return;
+            }
+
+            // Thêm ngày mới
+            newDates.push({ 
+                date: dateVal, 
+                note: noteVal || 'Ngày lễ' 
+            });
+
+            // Gửi lên Firebase
+            console.log("uploadeading...", newDates);
+            await setDoc(doc(db, "settings", "holidays"), { dates: newDates });
+            
+            console.log("✅ Lưu thành công!");
+            
+            // Reset form
+            dom.holidayInput.value = "";
+            dom.holidayNote.value = "";
+
+        } catch (error) {
+            console.error("❌ LỖI KHI LƯU:", error);
+            alert("Lỗi hệ thống: " + error.message);
+        } finally {
+            // Mở lại nút
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+        }
+    });
 }
 window.removeHoliday = async (i) => {
     if(confirm("Xóa ngày lễ này?")) {
@@ -311,5 +366,6 @@ function initBookingData() {
     });
 }
 window.verifyBooking = async (id) => await updateDoc(doc(db, "bookings", id), {status:'confirmed'});
+
 
 
