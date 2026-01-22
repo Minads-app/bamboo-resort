@@ -7,12 +7,12 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-s
 
 // TODO: Thay thế nội dung bên dưới bằng mã bạn vừa copy ở Bước 2
 const firebaseConfig = {
-  apiKey: "AIzaSyDxxxxxx...", // <-- Dán mã của bạn vào đây
+  apiKey: "AIzaSyCxX4r28RKPpFASkVJb-1fQqyL86-GR2oE",
   authDomain: "bamboo-hatien-resort.firebaseapp.com",
   projectId: "bamboo-hatien-resort",
-  storageBucket: "bamboo-hatien-resort.appspot.com",
-  messagingSenderId: "123456...",
-  appId: "1:123456..."
+  storageBucket: "bamboo-hatien-resort.firebasestorage.app",
+  messagingSenderId: "685462737675",
+  appId: "1:685462737675:web:5b3ad5d2e8eeb255dd480e"
 };
 
 // 1. Khởi tạo Firebase App
@@ -27,5 +27,6 @@ export const db = getFirestore(app);
 
 // Storage: Nơi lưu ảnh phòng, ảnh bill thanh toán
 export const storage = getStorage(app);
+
 
 console.log("🔥 Firebase đã được kết nối thành công!");
